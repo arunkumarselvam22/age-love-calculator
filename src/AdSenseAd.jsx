@@ -1,59 +1,39 @@
 import React, { useEffect } from 'react';
+import { config } from './config.js';
 
 const AdSenseAd = ({ 
-  slot = "YOUR_AD_SLOT_ID", 
-  style = { display: 'block', textAlign: 'center', minHeight: '250px' },
-  className = "adsbygoogle",
-  responsive = true
+  adSlot = config.adSlots.header,
+  adFormat = 'auto',
+  fullWidthResponsive = true,
+  style = { display: 'block' },
+  className = 'adsense-ad'
 }) => {
   useEffect(() => {
-    try {
-      // Load AdSense ads when component mounts
-      if (window.adsbygoogle && window.adsbygoogle.loaded) {
+    // Only load ads if AdSense is enabled and client ID is available
+    if (config.features.enableAdsense && config.adsenseClientId) {
+      try {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch (err) {
+        console.log('AdSense error:', err);
       }
-    } catch (error) {
-      console.error('AdSense error:', error);
     }
   }, []);
 
+  // Don't render ad if AdSense is disabled or no client ID
+  if (!config.features.enableAdsense || !config.adsenseClientId || !adSlot) {
+    return null;
+  }
+
   return (
-    <div className="ad-container" style={{ margin: '2rem 0', padding: '1rem' }}>
-      {/* Development placeholder - replace with actual AdSense code */}
-      <div 
-        className="ad-placeholder"
-        style={{
-          background: 'linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%)',
-          border: '2px dashed #ccc',
-          borderRadius: '10px',
-          padding: '2rem',
-          textAlign: 'center',
-          color: '#666',
-          fontSize: '0.9rem',
-          minHeight: '250px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'column'
-        }}
-      >
-        <div>📢 Advertisement Space</div>
-        <div style={{ fontSize: '0.8rem', marginTop: '0.5rem', opacity: 0.7 }}>
-          Replace this with your AdSense code
-        </div>
-      </div>
-      
-      {/* Uncomment and configure for production */}
-      {/*
-      <ins 
-        className={className}
+    <div className={className}>
+      <ins
+        className="adsbygoogle"
         style={style}
-        data-ad-client="ca-pub-YOUR_ADSENSE_ID"
-        data-ad-slot={slot}
-        data-ad-format={responsive ? "auto" : ""}
-        data-full-width-responsive={responsive ? "true" : "false"}
-      ></ins>
-      */}
+        data-ad-client={config.adsenseClientId}
+        data-ad-slot={adSlot}
+        data-ad-format={adFormat}
+        data-full-width-responsive={fullWidthResponsive}
+      />
     </div>
   );
 };

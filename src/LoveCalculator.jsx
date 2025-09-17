@@ -1,5 +1,8 @@
 import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import html2canvas from 'html2canvas';
+import { config } from './config.js';
+import { trackCalculatorUsage, trackDownload, trackSocialShare } from './GoogleAnalytics.js';
 
 const LoveCalculator = () => {
   const [name1, setName1] = useState('');
@@ -16,8 +19,9 @@ const LoveCalculator = () => {
   const handleImageUpload1 = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        alert('Please select an image smaller than 5MB');
+      const maxSizeMB = config.features.maxImageSize;
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        alert(`Please select an image smaller than ${maxSizeMB}MB`);
         return;
       }
       
@@ -34,8 +38,9 @@ const LoveCalculator = () => {
   const handleImageUpload2 = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        alert('Please select an image smaller than 5MB');
+      const maxSizeMB = config.features.maxImageSize;
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        alert(`Please select an image smaller than ${maxSizeMB}MB`);
         return;
       }
       
@@ -135,6 +140,9 @@ const LoveCalculator = () => {
       name1: name1.trim(),
       name2: name2.trim()
     });
+    
+    // Track calculator usage
+    trackCalculatorUsage('love', !!(profileImageUrl1 || profileImageUrl2));
   };
 
   const clearResult = () => {
@@ -190,9 +198,13 @@ const LoveCalculator = () => {
           }
           
           const link = document.createElement('a');
-          link.download = `${result.name1}-loves-${result.name2}-${new Date().toISOString().split('T')[0]}.png`;
+          const fileName = `${result.name1}-loves-${result.name2}-${new Date().toISOString().split('T')[0]}.png`;
+          link.download = fileName;
           link.href = canvas.toDataURL('image/png', 1.0);
           link.click();
+          
+          // Track download
+          trackDownload('love', fileName);
         } catch (error) {
           console.error('Error generating image:', error);
           alert('Error generating download. Please try again.');
@@ -253,12 +265,15 @@ Calculated with Age & Love Calculator`;
     } else if (platform === 'whatsapp') {
       const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${shareText}\n\n🔗 ${shareUrl}`)}`;
       window.open(whatsappUrl, '_blank');
+      trackSocialShare('whatsapp', 'love');
     } else if (platform === 'facebook') {
       const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`;
       window.open(facebookUrl, '_blank');
+      trackSocialShare('facebook', 'love');
     } else if (platform === 'twitter') {
       const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
       window.open(twitterUrl, '_blank');
+      trackSocialShare('twitter', 'love');
     }
   };
 
@@ -426,7 +441,7 @@ Calculated with Age & Love Calculator`;
               </div>
             </div>
             <div className="website-watermark">
-              <p>🌟 Age & Love Calculator</p>
+              <p>🌟 {config.app.name}</p>
             </div>
           </div>
           

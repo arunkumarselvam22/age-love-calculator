@@ -2,29 +2,46 @@ import React, { useState, useEffect } from 'react';
 import AgeCalculator from './AgeCalculator';
 import LoveCalculator from './LoveCalculator';
 import AdSenseAd from './AdSenseAd';
+import { useGoogleAnalytics, trackEvent } from './GoogleAnalytics';
+import { config } from './config.js';
 import './App.css';
 
 function App() {
   const [activeTab, setActiveTab] = useState('age');
+  
+  // Initialize Google Analytics
+  useGoogleAnalytics();
 
   // Dynamic theme based on active tab
   useEffect(() => {
     document.body.className = `theme-${activeTab}`;
+    
+    // Track tab changes
+    trackEvent('tab_changed', {
+      tab_name: activeTab,
+      timestamp: new Date().toISOString()
+    });
+    
     return () => {
       document.body.className = '';
     };
   }, [activeTab]);
 
-  // Add Google AdSense script for production
+  // Add Google AdSense script dynamically based on environment variables
   useEffect(() => {
-    // Uncomment for production with your AdSense ID
-    /*
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_ADSENSE_ID';
-    script.crossOrigin = 'anonymous';
-    document.head.appendChild(script);
-    */
+    if (config.features.enableAdsense && config.adsenseClientId) {
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${config.adsenseClientId}`;
+      script.crossOrigin = 'anonymous';
+      document.head.appendChild(script);
+      
+      // Add AdSense meta tag to head
+      const metaTag = document.createElement('meta');
+      metaTag.name = 'google-adsense-account';
+      metaTag.content = config.adsenseClientId;
+      document.head.appendChild(metaTag);
+    }
   }, []);
 
   return (
@@ -35,7 +52,7 @@ function App() {
             <div className="main-logo">
               {activeTab === 'age' ? '🎂' : activeTab === 'love' ? '💖' : '🧮'}
             </div>
-            <h1>Age & Love Calculator</h1>
+            <h1>{config.app.name}</h1>
           </div>
           <p className="hero-subtitle">Professional calculation tools for age analysis and relationship insights</p>
         </div>
@@ -63,10 +80,12 @@ function App() {
       </nav>
 
       <main className="main-content">
-        {/* Enhanced AdSense Placement - Top */}
-        <div className="ad-placement top-ad">
-          <AdSenseAd slot="TOP_BANNER_AD" />
-        </div>
+        {/* AdSense Placement - Top Banner */}
+        {config.features.enableAdsense && (
+          <div className="ad-placement top-ad">
+            <AdSenseAd adSlot={config.adSlots.header} />
+          </div>
+        )}
         
         <div className="calculator-container">
           {activeTab === 'age' && <AgeCalculator />}
@@ -120,15 +139,19 @@ function App() {
           )}
         </div>
         
-        {/* Enhanced AdSense Placement - Sidebar */}
-        <div className="ad-placement sidebar-ad">
-          <AdSenseAd slot="SIDEBAR_AD" />
-        </div>
+        {/* AdSense Placement - Sidebar */}
+        {config.features.enableAdsense && (
+          <div className="ad-placement sidebar-ad">
+            <AdSenseAd adSlot={config.adSlots.sidebar} />
+          </div>
+        )}
         
-        {/* Enhanced AdSense Placement - Bottom */}
-        <div className="ad-placement bottom-ad">
-          <AdSenseAd slot="BOTTOM_BANNER_AD" />
-        </div>
+        {/* AdSense Placement - Footer */}
+        {config.features.enableAdsense && (
+          <div className="ad-placement bottom-ad">
+            <AdSenseAd adSlot={config.adSlots.footer} />
+          </div>
+        )}
       </main>
 
       <footer className="app-footer">
@@ -157,7 +180,7 @@ function App() {
         </div>
         
         <div className="footer-bottom">
-          <p>Made with ❤️ for fun calculations! © 2025 Age & Love Calculator</p>
+          <p>Made with ❤️ for fun calculations! © 2025 {config.app.name}</p>
         </div>
       </footer>
     </div>

@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
+import { config } from './config.js';
+import { trackCalculatorUsage, trackDownload, trackSocialShare } from './GoogleAnalytics.js';
 
 const AgeCalculator = () => {
-  const [birthDate, setBirthDate] = useState('');
+  const [birthDate, setBirthDate] = useState(new Date().toISOString().split('T')[0]); // Default to current date
   const [calculateToDate, setCalculateToDate] = useState(new Date().toISOString().split('T')[0]);
   const [personName, setPersonName] = useState('');
   const [relationship, setRelationship] = useState('');
@@ -139,8 +142,9 @@ const AgeCalculator = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        alert('Please select an image smaller than 5MB');
+      const maxSizeMB = config.features.maxImageSize;
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        alert(`Please select an image smaller than ${maxSizeMB}MB`);
         return;
       }
       
@@ -221,6 +225,9 @@ const AgeCalculator = () => {
       personName: personName.trim() || 'Friend',
       relationship: relationship
     });
+    
+    // Track calculator usage
+    trackCalculatorUsage('age', !!profileImageUrl);
   };
 
   const clearResult = () => {
@@ -280,12 +287,15 @@ Calculated with Age & Love Calculator`;
     } else if (platform === 'whatsapp') {
       const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${shareText}\n\n🔗 ${shareUrl}`)}`;
       window.open(whatsappUrl, '_blank');
+      trackSocialShare('whatsapp', 'age');
     } else if (platform === 'facebook') {
       const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`;
       window.open(facebookUrl, '_blank');
+      trackSocialShare('facebook', 'age');
     } else if (platform === 'twitter') {
       const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
       window.open(twitterUrl, '_blank');
+      trackSocialShare('twitter', 'age');
     }
   };
 
@@ -327,9 +337,13 @@ Calculated with Age & Love Calculator`;
           
           const link = document.createElement('a');
           const titleData = generateTitleAndQuote();
-          link.download = `${result.personName}-age-card-${new Date().toISOString().split('T')[0]}.png`;
+          const fileName = `${result.personName}-age-card-${new Date().toISOString().split('T')[0]}.png`;
+          link.download = fileName;
           link.href = canvas.toDataURL('image/png', 1.0);
           link.click();
+          
+          // Track download
+          trackDownload('age', fileName);
         } catch (error) {
           console.error('Error generating image:', error);
           alert('Error generating download. Please try again.');
@@ -503,7 +517,7 @@ Calculated with Age & Love Calculator`;
                   </div>
                 </div>
                 <div className="website-watermark">
-                  <p>🌟 Age & Love Calculator</p>
+                  <p>🌟 {config.app.name}</p>
                 </div>
               </div>
             );
